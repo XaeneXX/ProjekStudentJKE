@@ -1,0 +1,109 @@
+#include <dummy.h>//ESP32 lib
+
+#define echoPin_1 23 // attach pin D23 ESP32 to pin Echo of HC-SR04
+#define trigPin_1 25 //attach pin D25 ESP32 to pin Trig of HC-SR04
+
+
+#define echoPin_2 2 // attach pin D2 ESP32 to pin Echo of HC-SR04
+#define trigPin_2 4 //attach pin D3 ESP32 to pin Trig of HC-SR04
+
+#define ledPin 15 // D15, untuk tengok sensor tengah detect apa; 
+
+// defines variables
+long duration; // variable for the duration of sound wave travel
+int distance; // variable for the distance measurement
+
+long duration2; // variable for the duration of sound wave travel
+int distance2; // variable for the distance measurement
+
+int car_distance = 200; //jarak kereta dari jalan adjust sitok
+///pasted
+float velocity;
+float velocity_kmh;
+float timeFirst;
+float timeScnd;
+float diff;
+float sensorDistance = 100; //in cm, jarak antara duak sensor ya adjust sitok
+
+void setup() {
+  pinMode(trigPin_1, OUTPUT); // Sets the trigPin as an OUTPUT
+  pinMode(echoPin_1, INPUT); // Sets the echoPin as an INPUT
+  pinMode(trigPin_2, OUTPUT); // Sets the trigPin as an OUTPUT
+  pinMode(echoPin_2, INPUT); // Sets the echoPin as an INPUT
+
+  Serial.begin(9600); // // Serial Communication is starting with 9600 of baudrate speed
+}
+void loop()
+{
+  if (getDistance_1() && !getDistance_2()) //kalau sensor 1 detect ada kereta, start timer
+  {
+    timeFirst = millis();
+    digitalWrite(ledPin, 0);
+    delay(30);
+  }
+
+  if (!getDistance_1() && getDistance_2())
+  {
+    timeScnd = millis();
+    diff = timeScnd - timeFirst;
+    velocity = sensorDistance / diff;
+    velocity_kmh = (velocity * 360) / 100; //milliseconds to hours and centimetres to kilometeres.
+    delay(30);
+    digitalWrite(ledPin, 1);
+    Serial.print("\n the velocity is : ");
+    Serial.println(velocity_kmh);
+    Serial.print(" km/hr. ");
+    //add display speed to 7seg here after this line pok
+    delay(1000);//display the result for 1 second
+    digitalWrite(ledPin, LOW);//padam LED untuk new detection bermula
+    delay(500);//exit this block
+  }
+
+
+}
+
+bool getDistance_1()
+{
+  // Clears the trigPin condition
+  digitalWrite(trigPin_1, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_1, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_1, HIGH);
+  // Calculating the distance
+  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+  if (distance <= car_distance) //kalau jarak kurang
+    return 1;
+  else
+    return 0;
+}
+
+bool getDistance_2()
+{
+  // Clears the trigPin condition
+  digitalWrite(trigPin_2, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_2, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration2 = pulseIn(echoPin_2, HIGH);
+  // Calculating the distance
+  distance2 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(distance2);
+  Serial.println(" cm");
+  if (distance2 <= car_distance) //kalau jarak kurang
+    return 1;
+  else
+    return 0;
+}
